@@ -3,7 +3,7 @@ Calibration
 - Calibration은 특정조건에서 측정에 의하여 결정된 값을 표준에 의해 결정된 값 사이의 관계로 치환하는 작업을 의미한다.
 - Calibration은 측정과 관측 시 발생하는 오차를 감소시키기 위해 필요하다.
 - IR sensor는 빛이 반사되는 정도에 따라 voltage 값을 출력한다.
-- 이 때 측정 상황에 따라 white & black의 측정 범위가 달라지기 때문에 센서의 위치와 상황을 고려하여 calibration을 진행해야 할 것이다
+- 이 때 측정 상황에 따라 white & black의 측정 범위가 달라지기 때문에 센서의 위치와 상황을 고려하여 calibration을  
  */
 
 #include "mbed.h"
@@ -49,9 +49,10 @@ void TRSensors::AnalogRead(unsigned int *sensor_values) {
         wait_us(21);
     }
 
-    for (int j = 0; j < _numSensors; j++) {
-        sensor_values[j-1] = values[channel] >> 6;
+    for (int i = 0; i < _numSensors; i++) {
+        sensor_values[i] = values[i+1] >> 6;
     }
+
 }
 
 /*
@@ -158,6 +159,7 @@ void TRSensors::readCalibrated(unsigned int *sensor_values) {
   return value 1000: 선이 센서 1 바로 아래 있음을 나타냄
   return value 2000: 두 센서 사이에 선이 있음
  */
+
 /*
     The formula is:
     
@@ -181,7 +183,7 @@ int TRSensors::readLine(unsigned int *sensor_values, unsigned char white_line) {
     unsigned int sum;       // this is for the denominator which is <= 64000
     static int last_value = 0; // assume initially that the line is left.
     
-    // calibration한 센서 값을 얻음
+    // calibration한 센서 값을 얻음 (0~1000 사이)
     readCalibrated(sensor_values);
 
     avg = 0;
@@ -191,9 +193,9 @@ int TRSensors::readLine(unsigned int *sensor_values, unsigned char white_line) {
         // calibration을 거친 sensor_value를 저장함.
         int value = sensor_values[i];
         
-        if (!white_line)
-            value = 1000-value;
-        sensor_values[i] = value;
+        if (!white_line)    // 0 값이 아니면 선에 있긴 있는거임
+            value = 1000-value; //ex. 980 --> 20
+        sensor_values[i] = value;   //20
         
         // robot이 라인 위에 있다고 판단하여 1 저장
         // (5개의 IR센서 중 1개의 센서라도 value값이 300보다 크면 on_line은 1)
@@ -221,7 +223,7 @@ int TRSensors::readLine(unsigned int *sensor_values, unsigned char white_line) {
     }
     
     /*
-     last_value < 2000: return 0 (IR1 sensor 아래 선이 있다고 판단 -> 선보다 오른쪽으로 치우친 상태)
+     last_value < 2000: return 0    (IR1 sensor 아래 선이 있다고 판단 -> 선보다 오른쪽으로 치우친 상태)
      last_value > 2000: return 4000 (IR5 sensor 아래 선이 있다고 판단 -> 선보다 왼쪽으로 치우친 상태)
      어느 센서 아래에 선이 위치하는지에 대한 정보 파악 가능.
      
